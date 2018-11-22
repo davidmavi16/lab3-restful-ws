@@ -100,7 +100,21 @@ public class AddressBookServiceTest {
 		// Verify that POST /contacts is well implemented by the service, i.e
 		// complete the test to ensure that it is not safe and not idempotent
 		//////////////////////////////////////////////////////////////////////
+		URI juanURI2 = URI.create("http://localhost:8282/contacts/person/2");
 
+		// Create a new user
+		response = client.target("http://localhost:8282/contacts")
+				.request(MediaType.APPLICATION_JSON)
+				.post(Entity.entity(juan, MediaType.APPLICATION_JSON));
+
+		assertEquals(201, response.getStatus());
+		assertEquals(juanURI2, response.getLocation());
+		assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getMediaType());
+
+		Response response2 = client.target("http://localhost:8282/contacts")
+				.request(MediaType.APPLICATION_JSON).get();
+		assertEquals(200, response2.getStatus());
+		assertEquals(2,response2.readEntity(AddressBook.class).getPersonList().size());
 	}
 
 	@Test
@@ -155,7 +169,13 @@ public class AddressBookServiceTest {
 		// Verify that GET /contacts/person/3 is well implemented by the service, i.e
 		// complete the test to ensure that it is safe and idempotent
 		//////////////////////////////////////////////////////////////////////
-
+		Response response2 = client.target("http://localhost:8282/contacts/person/3")
+				.request(MediaType.APPLICATION_JSON).get();
+		assertEquals(200, response.getStatus());
+		Person mariaTest = response2.readEntity(Person.class);
+		assertEquals(mariaTest.getName(),mariaUpdated.getName());
+		assertEquals(3,mariaUpdated.getId());
+		assertEquals(mariaUpdated.getHref(), mariaTest.getHref());
 	}
 
 	@Test
@@ -188,6 +208,28 @@ public class AddressBookServiceTest {
 		// complete the test to ensure that it is safe and idempotent
 		//////////////////////////////////////////////////////////////////////
 
+		Person testPerson = new Person();
+		testPerson.setName("Test");
+
+		URI person1Uri = URI.create("http://localhost:8282/contacts/person/1");
+		URI person2Uri = URI.create("http://localhost:8282/contacts/person/2");
+
+		Response response2 = client.target("http://localhost:8282/contacts")
+				.request(MediaType.APPLICATION_JSON)
+				.post(Entity.entity(testPerson, MediaType.APPLICATION_JSON));
+		assertEquals(201, response2.getStatus());
+		assertEquals(person1Uri,response2.getLocation());
+
+		Response response3 = client.target("http://localhost:8282/contacts")
+				.request(MediaType.APPLICATION_JSON).get();
+		assertEquals(200, response3.getStatus());
+		assertEquals(3, response3.readEntity(AddressBook.class).getPersonList().size());
+
+		response2 = client.target("http://localhost:8282/contacts")
+								.request(MediaType.APPLICATION_JSON)
+								.post(Entity.entity(testPerson, MediaType.APPLICATION_JSON));
+		assertEquals(201, response2.getStatus());
+		assertEquals(person2Uri,response2.getLocation());
 	}
 
 	@Test
@@ -241,6 +283,16 @@ public class AddressBookServiceTest {
 		// complete the test to ensure that it is idempotent but not safe
 		//////////////////////////////////////////////////////////////////////
 
+		Response response2 = client.target("http://localhost:8282/contacts/person/2")
+				.request(MediaType.APPLICATION_JSON)
+				.put(Entity.entity(maria, MediaType.APPLICATION_JSON));
+		assertEquals(200, response2.getStatus());
+		assertEquals(MediaType.APPLICATION_JSON_TYPE, response2.getMediaType());
+
+		Person testPerson = response2.readEntity(Person.class);
+		assertEquals(mariaRetrieved.getName(),testPerson.getName());
+		assertEquals(mariaRetrieved.getId(),testPerson.getId());
+		assertEquals(mariaRetrieved.getHref(),testPerson.getHref());
 	}
 
 	@Test
@@ -274,6 +326,9 @@ public class AddressBookServiceTest {
 		// complete the test to ensure that it is idempotent but not safe
 		//////////////////////////////////////////////////////////////////////
 
+		response = client.target("http://localhost:8282/contacts/person/2").request()
+							.delete();
+		assertEquals(404,response.getStatus());
 	}
 
 	@Test
